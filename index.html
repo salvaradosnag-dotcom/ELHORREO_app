@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mantenciones El Horreo Pro</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#111827">
+  <style>
+    :root {
+      --bg: #f3f4f6;
+      --card: #ffffff;
+      --text: #111827;
+      --muted: #6b7280;
+      --primary: #111827;
+      --accent: #2563eb;
+      --good: #16a34a;
+      --warn: #d97706;
+      --bad: #dc2626;
+      --border: #e5e7eb;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); }
+    header { background: linear-gradient(135deg, #111827, #1f2937); color: white; padding: 18px 16px; position: sticky; top: 0; z-index: 20; }
+    header h1 { margin: 0; font-size: 1.2rem; }
+    header p { margin: 6px 0 0; font-size: 0.9rem; opacity: 0.9; }
+    .shell { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 76px); }
+    nav { background: white; border-right: 1px solid var(--border); padding: 12px; }
+    nav button { width: 100%; text-align: left; padding: 12px; border: 1px solid var(--border); background: white; border-radius: 12px; margin-bottom: 10px; font-size: 0.95rem; cursor: pointer; }
+    nav button.active { background: #eff6ff; border-color: #bfdbfe; color: #1d4ed8; font-weight: 600; }
+    main { padding: 16px; }
+    .page { display: none; }
+    .page.active { display: block; }
+    .grid { display: grid; gap: 16px; }
+    .grid.kpi { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 16px; box-shadow: 0 1px 1px rgba(0,0,0,.03); }
+    .card h2, .card h3 { margin: 0 0 10px; }
+    .metric { font-size: 1.6rem; font-weight: 700; }
+    .muted { color: var(--muted); font-size: 0.92rem; }
+    .tag { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 0.78rem; font-weight: 600; }
+    .tag.good { background: #dcfce7; color: #166534; }
+    .tag.warn { background: #fef3c7; color: #92400e; }
+    .tag.bad { background: #fee2e2; color: #991b1b; }
+    .tag.info { background: #dbeafe; color: #1d4ed8; }
+    form { display: grid; gap: 12px; }
+    input, select, textarea { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); font: inherit; background: white; }
+    textarea { min-height: 90px; resize: vertical; }
+    .row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .btn { background: var(--primary); color: white; border: 0; padding: 12px 16px; border-radius: 12px; cursor: pointer; font-weight: 600; }
+    .btn.secondary { background: white; color: var(--text); border: 1px solid var(--border); }
+    .list { display: grid; gap: 12px; }
+    .item { border: 1px solid var(--border); border-radius: 14px; padding: 14px; background: white; }
+    .item-top { display: flex; justify-content: space-between; gap: 12px; align-items: start; }
+    .item h4 { margin: 0 0 8px; }
+    .item p { margin: 6px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+    th, td { padding: 10px; border-bottom: 1px solid var(--border); text-align: left; }
+    .empty { padding: 18px; border: 1px dashed var(--border); border-radius: 14px; background: #fafafa; color: var(--muted); }
+    .footer-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .section-title { display:flex; justify-content: space-between; align-items: center; gap:12px; margin-bottom:12px; }
+    .mini { font-size: .82rem; }
+    .alert-box { border-left: 4px solid #2563eb; background:#eff6ff; padding:12px; border-radius:10px; }
+    @media (max-width: 900px) {
+      .shell { grid-template-columns: 1fr; }
+      nav { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; border-right: 0; border-bottom: 1px solid var(--border); }
+      nav button { margin-bottom: 0; }
+      .row, .row-3 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Mantenciones El Horreo Pro</h1>
+    <p>Prototipo operativo para 6 locales · Mantenciones · Checklist · Pagos · Gerencia</p>
+  </header>
+  <div class="shell">
+    <nav id="nav"></nav>
+    <main>
+      <section id="dashboard" class="page active"></section>
+      <section id="mantenciones" class="page"></section>
+      <section id="checklist" class="page"></section>
+      <section id="pagos" class="page"></section>
+      <section id="usuarios" class="page"></section>
+      <section id="config" class="page"></section>
+    </main>
+  </div>
+<script>
+const STORAGE_KEY = 'elhorreo-prototype-v1';
+const defaultData = {
+  locales: ['JM ZF','DG EUP','HDG EUP','TB ZF','TB EUP','DP'],
+  usuarios: [
+    { nombre:'Jefe Operaciones', rol:'Operaciones', local:'Todos' },
+    { nombre:'Jefe Administrativo', rol:'Administración', local:'Todos' },
+    { nombre:'Gerenta General', rol:'Gerencia', local:'Todos' },
+    { nombre:'Encargado JM ZF', rol:'Tienda', local:'JM ZF' }
+  ],
+  mantenciones: [
+    { id: 1001, local:'JM ZF', equipo:'Freidora 1', prioridad:'Alta', estado:'Pendiente', tecnico:'FríoSur', fecha:'2026-04-17', detalle:'No mantiene temperatura.', costo:0 },
+    { id: 1002, local:'DG EUP', equipo:'Caja POS', prioridad:'Media', estado:'En proceso', tecnico:'TecnoPOS', fecha:'2026-04-16', detalle:'Lentitud al imprimir boletas.', costo:25000 },
+    { id: 1003, local:'TB ZF', equipo:'Máquina helados', prioridad:'Baja', estado:'Resuelto', tecnico:'ServiFrío', fecha:'2026-04-15', detalle:'Mantenimiento preventivo.', costo:48000 }
+  ],
+  checklist: [
+    { id: 1, local:'JM ZF', turno:'Apertura', fecha:'2026-04-17', completado: 4, total:5, responsable:'Encargado JM ZF' },
+    { id: 2, local:'DG EUP', turno:'Cierre', fecha:'2026-04-17', completado: 5, total:5, responsable:'Equipo DG EUP' }
+  ],
+  pagos: [
+    { id: 1, proveedor:'FríoSur', concepto:'Revisión freidora JM ZF', monto:68000, estado:'Pendiente', vencimiento:'2026-04-22' },
+    { id: 2, proveedor:'TecnoPOS', concepto:'Soporte POS DG EUP', monto:25000, estado:'Pagado', vencimiento:'2026-04-14' }
+  ],
+  checkItems: {
+    Apertura: ['Caja lista','Cocina limpia','Stock completo','Equipos operativos','Dotación completa'],
+    Cierre: ['Cuadre caja','Limpieza final','Merma ingresada','Equipos apagados','Respaldo cierre']
+  },
+  alerts: {
+    whatsappMantencion: true,
+    whatsappChecklist: true,
+    whatsappPagos: false
+  }
+};
+
+function loadData() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return structuredClone(defaultData);
+  try { return JSON.parse(raw); } catch { return structuredClone(defaultData); }
+}
+function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); renderAll(); }
+let state = loadData();
+
+const pages = [
+  ['dashboard','Panel gerencial'],
+  ['mantenciones','Mantenciones'],
+  ['checklist','Checklist'],
+  ['pagos','Pagos'],
+  ['usuarios','Usuarios'],
+  ['config','Configuración']
+];
+
+function navHTML() {
+  const active = document.querySelector('.page.active')?.id || 'dashboard';
+  return pages.map(([id, label]) => `<button class="${active===id?'active':''}" onclick="showPage('${id}')">${label}</button>`).join('');
+}
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('nav').innerHTML = navHTML();
+}
+function money(n) { return new Intl.NumberFormat('es-CL', { style:'currency', currency:'CLP', maximumFractionDigits:0 }).format(n); }
+function statusTag(text) {
+  const map = { Pendiente:'bad', 'En proceso':'warn', Resuelto:'good', Pagado:'good', Vencido:'bad', Completo:'good' };
+  const klass = map[text] || 'info';
+  return `<span class="tag ${klass}">${text}</span>`;
+}
+
+function renderDashboard() {
+  const mantPend = state.mantenciones.filter(x=>x.estado==='Pendiente').length;
+  const mantProc = state.mantenciones.filter(x=>x.estado==='En proceso').length;
+  const checklistOpen = state.checklist.filter(x=>x.completado < x.total).length;
+  const pagosPend = state.pagos.filter(x=>x.estado==='Pendiente').reduce((a,b)=>a+b.monto,0);
+  const cards = [
+    ['Locales activos', state.locales.length, 'Todos operativos en prototipo'],
+    ['Mantenciones pendientes', mantPend, 'Prioridad alta visible'],
+    ['Mantenciones en proceso', mantProc, 'Seguimiento técnico'],
+    ['Checklist incompletos', checklistOpen, 'Control por turno'],
+    ['Pagos pendientes', money(pagosPend), 'Control administrativo'],
+    ['Usuarios configurados', state.usuarios.length, 'Roles por área']
+  ];
+
+  document.getElementById('dashboard').innerHTML = `
+    <div class="grid kpi">
+      ${cards.map(c => `<div class="card"><div class="muted">${c[0]}</div><div class="metric">${c[1]}</div><div class="muted">${c[2]}</div></div>`).join('')}
+    </div>
+    <div class="grid" style="margin-top:16px; grid-template-columns: 1.2fr .8fr;">
+      <div class="card">
+        <div class="section-title"><h2>Vista ejecutiva</h2><span class="mini muted">Demo navegable</span></div>
+        <table>
+          <thead><tr><th>Local</th><th>Mantenciones abiertas</th><th>Checklist hoy</th><th>Estado</th></tr></thead>
+          <tbody>
+            ${state.locales.map(local => {
+              const abiertas = state.mantenciones.filter(x=>x.local===local && x.estado!=='Resuelto').length;
+              const cl = state.checklist.find(x=>x.local===local);
+              const ok = abiertas===0 && cl && cl.completado===cl.total ? 'Completo' : (abiertas>0 ? 'Atención' : 'Monitoreo');
+              return `<tr><td>${local}</td><td>${abiertas}</td><td>${cl ? `${cl.completado}/${cl.total}` : 'Sin registro'}</td><td>${statusTag(ok==='Completo'?'Completo':ok==='Atención'?'Pendiente':'En proceso')}</td></tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <h2>Automatizaciones previstas</h2>
+        <div class="alert-box">
+          <div><strong>WhatsApp mantención:</strong> ${state.alerts.whatsappMantencion ? 'Activo en diseño' : 'Desactivado'}</div>
+          <div><strong>Checklist atrasado:</strong> ${state.alerts.whatsappChecklist ? 'Activo en diseño' : 'Desactivado'}</div>
+          <div><strong>Pago vencido:</strong> ${state.alerts.whatsappPagos ? 'Activo en diseño' : 'Desactivado'}</div>
+        </div>
+        <p class="muted">En producción esto se conectaría con AppSheet/Glide + Google Sheets + WhatsApp Cloud API.</p>
+      </div>
+    </div>`;
+}
+
+function renderMantenciones() {
+  document.getElementById('mantenciones').innerHTML = `
+    <div class="grid" style="grid-template-columns: 1fr 1fr;">
+      <div class="card">
+        <h2>Nueva mantención</h2>
+        <form id="mantForm">
+          <div class="row">
+            <select name="local" required>${state.locales.map(l=>`<option>${l}</option>`).join('')}</select>
+            <input name="equipo" placeholder="Equipo" required />
+          </div>
+          <div class="row">
+            <select name="prioridad"><option>Alta</option><option>Media</option><option>Baja</option></select>
+            <select name="estado"><option>Pendiente</option><option>En proceso</option><option>Resuelto</option></select>
+          </div>
+          <div class="row">
+            <input name="tecnico" placeholder="Técnico / proveedor" required />
+            <input type="date" name="fecha" required value="${new Date().toISOString().slice(0,10)}" />
+          </div>
+          <input type="number" name="costo" placeholder="Costo estimado" min="0" />
+          <textarea name="detalle" placeholder="Detalle de la falla"></textarea>
+          <button class="btn" type="submit">Guardar mantención</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2>Flujo esperado</h2>
+        <ol class="muted">
+          <li>Tienda reporta falla.</li>
+          <li>Operaciones asigna técnico.</li>
+          <li>Estado cambia a en proceso.</li>
+          <li>Administración valida costo.</li>
+          <li>Cierre y trazabilidad histórica.</li>
+        </ol>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px;">
+      <div class="section-title"><h2>Listado</h2><button class="btn secondary" onclick="resetDemo()">Reiniciar demo</button></div>
+      <div class="list">
+        ${state.mantenciones.map(m => `
+          <div class="item">
+            <div class="item-top">
+              <div>
+                <h4>#${m.id} · ${m.local} · ${m.equipo}</h4>
+                <p>${m.detalle || 'Sin detalle'}</p>
+                <p class="muted">Técnico: ${m.tecnico} · Fecha: ${m.fecha} · Costo: ${money(Number(m.costo||0))}</p>
+              </div>
+              <div>
+                ${statusTag(m.estado)}<br><br>${statusTag(m.prioridad)}
+              </div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  document.getElementById('mantForm').onsubmit = e => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    state.mantenciones.unshift({
+      id: Date.now().toString().slice(-6),
+      local: fd.get('local'), equipo: fd.get('equipo'), prioridad: fd.get('prioridad'),
+      estado: fd.get('estado'), tecnico: fd.get('tecnico'), fecha: fd.get('fecha'),
+      detalle: fd.get('detalle'), costo: Number(fd.get('costo')||0)
+    });
+    saveData();
+    e.target.reset();
+  };
+}
+
+function renderChecklist() {
+  document.getElementById('checklist').innerHTML = `
+    <div class="grid" style="grid-template-columns: 1fr 1fr;">
+      <div class="card">
+        <h2>Registrar checklist</h2>
+        <form id="checkForm">
+          <div class="row">
+            <select name="local">${state.locales.map(l=>`<option>${l}</option>`).join('')}</select>
+            <select name="turno" id="turnoSel"><option>Apertura</option><option>Cierre</option></select>
+          </div>
+          <div class="row">
+            <input type="date" name="fecha" value="${new Date().toISOString().slice(0,10)}" required />
+            <input name="responsable" placeholder="Responsable" required />
+          </div>
+          <div id="itemsBox"></div>
+          <button class="btn" type="submit">Guardar checklist</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2>Checklist estándar</h2>
+        <p class="muted">El turno cambia automáticamente los ítems sugeridos para apertura o cierre.</p>
+        <div class="footer-actions">
+          <span class="tag info">Apertura</span>
+          <span class="tag info">Cierre</span>
+          <span class="tag info">Trazabilidad diaria</span>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px;">
+      <h2>Historial</h2>
+      <div class="list">
+        ${state.checklist.map(c => `
+          <div class="item">
+            <div class="item-top">
+              <div>
+                <h4>${c.local} · ${c.turno}</h4>
+                <p class="muted">${c.fecha} · Responsable: ${c.responsable}</p>
+              </div>
+              <div>${statusTag(c.completado===c.total?'Completo':'Pendiente')}</div>
+            </div>
+            <p>${c.completado}/${c.total} ítems completados</p>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  const renderItems = () => {
+    const turno = document.getElementById('turnoSel').value;
+    document.getElementById('itemsBox').innerHTML = state.checkItems[turno].map((item, i) => `
+      <label style="display:flex; gap:10px; align-items:center; border:1px solid var(--border); border-radius:12px; padding:10px;">
+        <input type="checkbox" name="item${i}" style="width:auto;"> <span>${item}</span>
+      </label>`).join('');
+  };
+  renderItems();
+  document.getElementById('turnoSel').onchange = renderItems;
+  document.getElementById('checkForm').onsubmit = e => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const turno = fd.get('turno');
+    const total = state.checkItems[turno].length;
+    let completado = 0;
+    [...e.target.querySelectorAll('input[type=checkbox]')].forEach(c => { if (c.checked) completado++; });
+    state.checklist.unshift({
+      id: Date.now(), local: fd.get('local'), turno, fecha: fd.get('fecha'),
+      responsable: fd.get('responsable'), completado, total
+    });
+    saveData();
+  };
+}
+
+function renderPagos() {
+  document.getElementById('pagos').innerHTML = `
+    <div class="grid" style="grid-template-columns: 1fr 1fr;">
+      <div class="card">
+        <h2>Registrar pago</h2>
+        <form id="payForm">
+          <input name="proveedor" placeholder="Proveedor" required />
+          <input name="concepto" placeholder="Concepto" required />
+          <div class="row">
+            <input type="number" name="monto" placeholder="Monto" min="0" required />
+            <input type="date" name="vencimiento" required />
+          </div>
+          <select name="estado"><option>Pendiente</option><option>Pagado</option></select>
+          <button class="btn" type="submit">Guardar pago</button>
+        </form>
+      </div>
+      <div class="card">
+        <h2>Control administrativo</h2>
+        <p class="muted">Este módulo cruza costo de mantención, proveedor, vencimiento y estado de pago para administración y gerencia.</p>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px;">
+      <h2>Pagos y proveedores</h2>
+      <table>
+        <thead><tr><th>Proveedor</th><th>Concepto</th><th>Monto</th><th>Vencimiento</th><th>Estado</th></tr></thead>
+        <tbody>
+          ${state.pagos.map(p => `<tr><td>${p.proveedor}</td><td>${p.concepto}</td><td>${money(p.monto)}</td><td>${p.vencimiento}</td><td>${statusTag(p.estado)}</td></tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  document.getElementById('payForm').onsubmit = e => {
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    state.pagos.unshift({ id: Date.now(), proveedor: fd.get('proveedor'), concepto: fd.get('concepto'), monto: Number(fd.get('monto')), vencimiento: fd.get('vencimiento'), estado: fd.get('estado') });
+    saveData();
+  };
+}
+
+function renderUsuarios() {
+  document.getElementById('usuarios').innerHTML = `
+    <div class="card">
+      <div class="section-title"><h2>Roles base</h2><span class="mini muted">Diseño recomendado para tu operación</span></div>
+      <table>
+        <thead><tr><th>Usuario</th><th>Rol</th><th>Acceso</th></tr></thead>
+        <tbody>
+          ${state.usuarios.map(u => `<tr><td>${u.nombre}</td><td>${u.rol}</td><td>${u.local}</td></tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+    <div class="grid" style="margin-top:16px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+      <div class="card"><h3>Tienda</h3><p class="muted">Reporta mantenciones, sube checklist y ve solo su local.</p></div>
+      <div class="card"><h3>Operaciones</h3><p class="muted">Ve todos los locales, asigna técnicos y sigue estados.</p></div>
+      <div class="card"><h3>Administración</h3><p class="muted">Valida costos, proveedores y pagos pendientes.</p></div>
+      <div class="card"><h3>Gerencia</h3><p class="muted">Consulta panel consolidado y alertas críticas.</p></div>
+    </div>`;
+}
+
+function renderConfig() {
+  document.getElementById('config').innerHTML = `
+    <div class="card">
+      <h2>Configuración demo</h2>
+      <label style="display:flex; align-items:center; gap:10px; margin:10px 0;">
+        <input type="checkbox" id="waMant" ${state.alerts.whatsappMantencion?'checked':''} style="width:auto;"> WhatsApp mantenciones
+      </label>
+      <label style="display:flex; align-items:center; gap:10px; margin:10px 0;">
+        <input type="checkbox" id="waCheck" ${state.alerts.whatsappChecklist?'checked':''} style="width:auto;"> WhatsApp checklist atrasado
+      </label>
+      <label style="display:flex; align-items:center; gap:10px; margin:10px 0;">
+        <input type="checkbox" id="waPay" ${state.alerts.whatsappPagos?'checked':''} style="width:auto;"> WhatsApp pagos vencidos
+      </label>
+      <div class="footer-actions" style="margin-top:16px;">
+        <button class="btn" onclick="saveConfig()">Guardar configuración</button>
+        <button class="btn secondary" onclick="resetDemo()">Restaurar demo</button>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px;">
+      <h2>Próxima etapa</h2>
+      <p class="muted">Con esto ya tienes la estructura UX del ecosistema. El siguiente paso es montarlo sobre Google Sheets + AppSheet/Glide para usuarios reales y automatizar WhatsApp y correo.</p>
+    </div>`;
+}
+
+function saveConfig() {
+  state.alerts.whatsappMantencion = document.getElementById('waMant').checked;
+  state.alerts.whatsappChecklist = document.getElementById('waCheck').checked;
+  state.alerts.whatsappPagos = document.getElementById('waPay').checked;
+  saveData();
+}
+function resetDemo() {
+  state = structuredClone(defaultData);
+  saveData();
+}
+function renderAll() {
+  document.getElementById('nav').innerHTML = navHTML();
+  renderDashboard(); renderMantenciones(); renderChecklist(); renderPagos(); renderUsuarios(); renderConfig();
+}
+renderAll();
+</script>
+</body>
+</html>
