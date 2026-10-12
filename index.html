@@ -145,11 +145,20 @@ function showPage(id) {
   document.getElementById(id).classList.add('active');
   document.getElementById('nav').innerHTML = navHTML();
 }
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 function money(n) { return new Intl.NumberFormat('es-CL', { style:'currency', currency:'CLP', maximumFractionDigits:0 }).format(n); }
 function statusTag(text) {
   const map = { Pendiente:'bad', 'En proceso':'warn', Resuelto:'good', Pagado:'good', Vencido:'bad', Completo:'good' };
   const klass = map[text] || 'info';
-  return `<span class="tag ${klass}">${text}</span>`;
+  return `<span class="tag ${klass}">${escapeHtml(text)}</span>`;
 }
 
 function renderDashboard() {
@@ -180,7 +189,7 @@ function renderDashboard() {
               const abiertas = state.mantenciones.filter(x=>x.local===local && x.estado!=='Resuelto').length;
               const cl = state.checklist.find(x=>x.local===local);
               const ok = abiertas===0 && cl && cl.completado===cl.total ? 'Completo' : (abiertas>0 ? 'Atención' : 'Monitoreo');
-              return `<tr><td>${local}</td><td>${abiertas}</td><td>${cl ? `${cl.completado}/${cl.total}` : 'Sin registro'}</td><td>${statusTag(ok==='Completo'?'Completo':ok==='Atención'?'Pendiente':'En proceso')}</td></tr>`;
+              return `<tr><td>${escapeHtml(local)}</td><td>${abiertas}</td><td>${cl ? `${cl.completado}/${cl.total}` : 'Sin registro'}</td><td>${statusTag(ok==='Completo'?'Completo':ok==='Atención'?'Pendiente':'En proceso')}</td></tr>`;
             }).join('')}
           </tbody>
         </table>
@@ -204,7 +213,7 @@ function renderMantenciones() {
         <h2>Nueva mantención</h2>
         <form id="mantForm">
           <div class="row">
-            <select name="local" required>${state.locales.map(l=>`<option>${l}</option>`).join('')}</select>
+            <select name="local" required>${state.locales.map(l=>`<option>${escapeHtml(l)}</option>`).join('')}</select>
             <input name="equipo" placeholder="Equipo" required />
           </div>
           <div class="row">
@@ -238,9 +247,9 @@ function renderMantenciones() {
           <div class="item">
             <div class="item-top">
               <div>
-                <h4>#${m.id} · ${m.local} · ${m.equipo}</h4>
-                <p>${m.detalle || 'Sin detalle'}</p>
-                <p class="muted">Técnico: ${m.tecnico} · Fecha: ${m.fecha} · Costo: ${money(Number(m.costo||0))}</p>
+                <h4>#${m.id} · ${escapeHtml(m.local)} · ${escapeHtml(m.equipo)}</h4>
+                <p>${escapeHtml(m.detalle) || 'Sin detalle'}</p>
+                <p class="muted">Técnico: ${escapeHtml(m.tecnico)} · Fecha: ${escapeHtml(m.fecha)} · Costo: ${money(Number(m.costo||0))}</p>
               </div>
               <div>
                 ${statusTag(m.estado)}<br><br>${statusTag(m.prioridad)}
@@ -270,7 +279,7 @@ function renderChecklist() {
         <h2>Registrar checklist</h2>
         <form id="checkForm">
           <div class="row">
-            <select name="local">${state.locales.map(l=>`<option>${l}</option>`).join('')}</select>
+            <select name="local">${state.locales.map(l=>`<option>${escapeHtml(l)}</option>`).join('')}</select>
             <select name="turno" id="turnoSel"><option>Apertura</option><option>Cierre</option></select>
           </div>
           <div class="row">
@@ -298,8 +307,8 @@ function renderChecklist() {
           <div class="item">
             <div class="item-top">
               <div>
-                <h4>${c.local} · ${c.turno}</h4>
-                <p class="muted">${c.fecha} · Responsable: ${c.responsable}</p>
+                <h4>${escapeHtml(c.local)} · ${escapeHtml(c.turno)}</h4>
+                <p class="muted">${escapeHtml(c.fecha)} · Responsable: ${escapeHtml(c.responsable)}</p>
               </div>
               <div>${statusTag(c.completado===c.total?'Completo':'Pendiente')}</div>
             </div>
@@ -311,7 +320,7 @@ function renderChecklist() {
     const turno = document.getElementById('turnoSel').value;
     document.getElementById('itemsBox').innerHTML = state.checkItems[turno].map((item, i) => `
       <label style="display:flex; gap:10px; align-items:center; border:1px solid var(--border); border-radius:12px; padding:10px;">
-        <input type="checkbox" name="item${i}" style="width:auto;"> <span>${item}</span>
+        <input type="checkbox" name="item${i}" style="width:auto;"> <span>${escapeHtml(item)}</span>
       </label>`).join('');
   };
   renderItems();
@@ -357,7 +366,7 @@ function renderPagos() {
       <table>
         <thead><tr><th>Proveedor</th><th>Concepto</th><th>Monto</th><th>Vencimiento</th><th>Estado</th></tr></thead>
         <tbody>
-          ${state.pagos.map(p => `<tr><td>${p.proveedor}</td><td>${p.concepto}</td><td>${money(p.monto)}</td><td>${p.vencimiento}</td><td>${statusTag(p.estado)}</td></tr>`).join('')}
+          ${state.pagos.map(p => `<tr><td>${escapeHtml(p.proveedor)}</td><td>${escapeHtml(p.concepto)}</td><td>${money(p.monto)}</td><td>${escapeHtml(p.vencimiento)}</td><td>${statusTag(p.estado)}</td></tr>`).join('')}
         </tbody>
       </table>
     </div>`;
@@ -376,7 +385,7 @@ function renderUsuarios() {
       <table>
         <thead><tr><th>Usuario</th><th>Rol</th><th>Acceso</th></tr></thead>
         <tbody>
-          ${state.usuarios.map(u => `<tr><td>${u.nombre}</td><td>${u.rol}</td><td>${u.local}</td></tr>`).join('')}
+          ${state.usuarios.map(u => `<tr><td>${escapeHtml(u.nombre)}</td><td>${escapeHtml(u.rol)}</td><td>${escapeHtml(u.local)}</td></tr>`).join('')}
         </tbody>
       </table>
     </div>
