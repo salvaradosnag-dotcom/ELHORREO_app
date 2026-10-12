@@ -5169,8 +5169,9 @@ function GestorTraslados({ marca, m, semana, semanas, setSemanas }) {
 
   const DIAS_ES = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
 
-  // Empleados con sus traslados actuales
-  const empleadosConInfo = semana.empleados
+  // Empleados ordenados alfabéticamente con sus traslados actuales
+  const empleadosConInfo = [...semana.empleados]
+    .sort((a, b) => (a.nombre || "").localeCompare(b.nombre || ""))
     .filter(emp => !busqueda || emp.nombre.toLowerCase().includes(busqueda.toLowerCase()) || emp.cargo.toLowerCase().includes(busqueda.toLowerCase()))
     .map(emp => {
       const trasladosEmp = traslados.filter(t => t.rut === emp.rut);
@@ -5976,9 +5977,11 @@ function ControlLabor({ marca, ventas = [], solicitudes = [], semanas: _semProp,
     ? vistaLocal
     : (localesConSemanas[0] || (LOCALES_POR_MARCA[marca]||LOCALES)[0] || "");
 
-  // Semanas solo del local visible
+  // Semanas solo del local visible, ordenadas descendentemente por fecha de inicio / número de semana
   const semanasMarca = useMemo(() =>
-    semanasMarcaTodas.filter(s => s.uploadLocal === vistaLocalEfectiva),
+    semanasMarcaTodas
+      .filter(s => s.uploadLocal === vistaLocalEfectiva)
+      .sort((a, b) => (b.inicio || "").localeCompare(a.inicio || "") || (b.semana || 0) - (a.semana || 0)),
   [semanasMarcaTodas, vistaLocalEfectiva]);
 
   const semana = semanasMarca[Math.min(semSel, semanasMarca.length - 1)] || null;
